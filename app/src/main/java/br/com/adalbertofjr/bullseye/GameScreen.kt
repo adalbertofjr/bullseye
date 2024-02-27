@@ -3,31 +3,40 @@ package br.com.adalbertofjr.bullseye
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import br.com.adalbertofjr.bullseye.ui.theme.BullseyeTheme
+import kotlin.random.Random
 
 @Composable
 fun GameScreen() {
-    var alertIsVisible by remember { mutableStateOf(false) }
+    var alertIsVisible by rememberSaveable { mutableStateOf(false) }
+    var sliderValue by rememberSaveable { mutableFloatStateOf(0.5f) }
+    val targetValue by rememberSaveable { mutableIntStateOf(Random.nextInt(1, 100)) }
+
+    val sliderToInt = (sliderValue * 100).toInt()
+
+    fun pointsForCurrentRound(): Int{
+        val maxScore = 100
+        val difference = Math.abs(targetValue - sliderToInt)
+
+        return maxScore - difference
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -42,29 +51,13 @@ fun GameScreen() {
             verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.weight(.9f)
         ) {
-            Text(text = stringResource(R.string.instruction_text))
-            Text(text = stringResource(R.string.target_value_text), fontSize = 32.sp, fontWeight = FontWeight.Bold)
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.min_value_text),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(start =16.dp)
-                )
-                Slider(
-                    value = 0.5f,
-                    valueRange = 0.1f..1f,
-                    onValueChange = {},
-                    modifier = Modifier.weight(1f)
-
-                )
-                Text(
-                    text = stringResource(R.string.max_value_text),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(end = 16.dp)
-                    )
-            }
+            GamePrompt(targetValue = targetValue)
+            TargetSlider(
+                value = sliderValue,
+                valueChanged = {value ->
+                    sliderValue = value
+                }
+            )
             Button(onClick = {
                 alertIsVisible = true
                 Log.i("ALERT VISIBLE", alertIsVisible.toString())
@@ -74,7 +67,11 @@ fun GameScreen() {
         }
         Spacer(modifier = Modifier.weight(.5f))
 
-        if (alertIsVisible) ResultDialog(hideDialog = { alertIsVisible = false })
+        if (alertIsVisible) ResultDialog(
+            hideDialog = { alertIsVisible = false },
+            sliderValue = sliderToInt,
+            pointsForScoredRound =  pointsForCurrentRound()
+        )
     }
 }
 
